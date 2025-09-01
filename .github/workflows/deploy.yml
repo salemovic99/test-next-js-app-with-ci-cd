@@ -3,31 +3,57 @@ name: CI/CD to Ubuntu Server
 on:
   push:
     branches:
-      - master   # or main if that's your default
+      - master   # change to main if needed
 
 jobs:
-  deploy:
-    runs-on: self-hosted
+  build-and-deploy:
+    runs-on: self-hosted   # your Ubuntu self-hosted runner
+    env:
+      NODE_ENV: production
     steps:
-      - name: Checkout code
+      # 1️⃣ Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy to Ubuntu via SSH
-        uses: appleboy/ssh-action@v1.1.0
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          timeout: 1800   # 30 minutes
-          script: |
-            if [ ! -d ~/simple-next-app/.git ]; then
-              git clone https://github.com/${{ github.repository }} ~/simple-next-app
-            fi
-            cd ~/simple-next-app
-            git fetch origin
-            git reset --hard origin/master
+          node-version: 18
+          cache: 'npm'   # enables caching for faster npm installs
 
-            docker build -t simple-next-app .
-            docker stop nextapp || true
-            docker rm nextapp || true
-            docker run -d -p 3000:3000 --name nextapp --restart unless-stopped simple-next-app
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # 4️⃣ Build Next.js app
+      - name: Build Next.js
+        run: npm run build
+
+      # 5️⃣ Lint and type-check (optional but recommended)
+      - name: Lint & type-check
+        run: |
+          npm run lint
+          npm run type-check
+
+      # 6️⃣ Build Docker image
+      - name: Build Docker image
+        run: docker build -t simple-next-app .
+
+      # 7️⃣ Stop & remove old container safely
+      - name: Stop old container
+        run: |
+          docker stop nextapp || true
+          docker rm nextapp || true
+
+      # 8️⃣ Run new Docker container
+      - name: Run container
+        run: |
+          docker run -d -p 3000:3000 \
+          --name nextapp \
+          --restart unless-stopped \
+          simple-next-app
+
+      # 9️⃣ Optional: Check if container is running
+      - name: Verify container
+        run: docker ps | grep nextapp
