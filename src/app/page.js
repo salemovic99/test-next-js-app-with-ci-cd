@@ -6,6 +6,9 @@ export default function Home() {
       <h2 className="text-4xl sm:text-6xl font-bold text-center">
         Welcome to <span className="text-blue-600">Next.js Edit after github workflows</span>!
       </h2>
+      <p>
+        this is a new change
+      </p>
     </div>
   );
 }
