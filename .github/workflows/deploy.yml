@@ -3,11 +3,9 @@ name: CI/CD to Ubuntu Server
 on:
   push:
     branches:
-      - master
+      - master   # or main if that's your default
 
 jobs:
-  
-
   deploy:
     runs-on: self-hosted
     steps:
@@ -21,10 +19,14 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd ~/simple-next-app || git clone https://github.com/${{ github.repository }} ~/simple-next-app
+            if [ ! -d ~/simple-next-app/.git ]; then
+              git clone https://github.com/${{ github.repository }} ~/simple-next-app
+            fi
             cd ~/simple-next-app
-            git pull origin master
+            git fetch origin
+            git reset --hard origin/master
+
             docker build -t simple-next-app .
             docker stop nextapp || true
             docker rm nextapp || true
-            docker run -d -p 3000:3000 --name nextapp simple-next-app
+            docker run -d -p 3000:3000 --name nextapp --restart unless-stopped simple-next-app
