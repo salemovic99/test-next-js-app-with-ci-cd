@@ -8,7 +8,19 @@ export default function Home() {
       </h2>
       <p>
         this is a new change
+        --
       </p>
+
+      <Image
+        src="/next.svg"
+        alt="Next.js Logo"
+        width={180}
+        height={37}
+        priority
+      />    
+      <footer className="text-sm text-gray-500">
+        Powered by Next.js 13 and Tailwind CSS
+      </footer>
     </div>
   );
 }
